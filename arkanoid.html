@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arkanoid</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #222;
+    }
+
+    .game-container {
+      width: 400px;
+      height: 600px;
+      background-color: #000;
+      position: relative;
+      margin: 50px auto;
+    }
+
+    .paddle {
+      width: 80px;
+      height: 20px;
+      background-color: #fff;
+      position: absolute;
+      bottom: 20px;
+      left: 160px;
+    }
+
+    .ball {
+      width: 20px;
+      height: 20px;
+      background-color: #fff;
+      border-radius: 50%;
+      position: absolute;
+      bottom: 50px;
+      left: 190px;
+    }
+
+    .brick {
+      width: 90px;
+      height: 20px;
+      background-color: #fff;
+      margin: 2px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="paddle" id="paddle"></div>
+    <div class="ball" id="ball"></div>
+    <div class="bricks-container" id="bricks-container"></div>
+  </div>
+
+  <div id="win-message" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; padding: 20px; border-radius: 10px;">
+    <h1>¡Has ganado!</h1>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const paddle = document.getElementById("paddle");
+      const ball = document.getElementById("ball");
+      const winMessage = document.getElementById("win-message");
+
+      const paddleWidth = 80;
+      const paddleHeight = 20;
+      const ballSize = 20;
+      const brickWidth = 60;
+      const brickHeight = 20;
+      const bricksPerRow = 6;
+      const numRows = 3;
+      const totalBricks = bricksPerRow * numRows;
+      let ballSpeedX = 4;
+      let ballSpeedY = -4;
+      let ballX = 190;
+      let ballY = 520;
+      let bricksDestroyed = 0;
+
+      function createBricks() {
+        const bricksContainer = document.getElementById("bricks-container");
+        for (let i = 0; i < numRows; i++) {
+          for (let j = 0; j < bricksPerRow; j++) {
+            const brick = document.createElement("div");
+            brick.classList.add("brick");
+            brick.style.top = (i * (brickHeight + 2)) + "px";
+            brick.style.left = (j * (brickWidth + 2)) + "px";
+            bricksContainer.appendChild(brick);
+          }
+        }
+      }
+
+      function movePaddle(event) {
+        const mouseX = event.clientX;
+        const gameContainerRect = document.querySelector(".game-container").getBoundingClientRect();
+        let newPosition = mouseX - gameContainerRect.left - paddleWidth / 2;
+        if (newPosition < 0) {
+          newPosition = 0;
+        } else if (newPosition > gameContainerRect.width - paddleWidth) {
+          newPosition = gameContainerRect.width - paddleWidth;
+        }
+        paddle.style.left = newPosition + "px";
+      }
+
+      function generateBricks() {
+        const bricksContainer = document.getElementById("bricks-container");
+        for (let i = 0; i < numRows; i++) {
+          for (let j = 0; j < bricksPerRow; j++) {
+            const brick = document.createElement("div");
+            brick.classList.add("brick");
+            brick.style.top = (i * (brickHeight + 2)) + "px";
+            brick.style.left = (j * (brickWidth + 2)) + "px";
+            bricksContainer.appendChild(brick);
+          }
+        }
+      }
+
+      function moveBall() {
+        ballX += ballSpeedX;
+        ballY += ballSpeedY;
+        ball.style.left = ballX + "px";
+        ball.style.top = ballY + "px";
+
+        // Reverse ball direction if it hits walls
+        if (ballX <= 0 || ballX >= 400 - ballSize) {
+          ballSpeedX = -ballSpeedX;
+        }
+        if (ballY <= 0) {
+          ballSpeedY = -ballSpeedY;
+        }
+
+        // Check collision with paddle
+        const paddleRect = paddle.getBoundingClientRect();
+        const ballRect = ball.getBoundingClientRect();
+        if (ballRect.bottom >= paddleRect.top && ballRect.right >= paddleRect.left && ballRect.left <= paddleRect.right) {
+          ballSpeedY = -ballSpeedY;
+        }
+
+        // Check collision with bricks
+        const bricks = document.querySelectorAll(".brick");
+        bricks.forEach(brick => {
+          const brickRect = brick.getBoundingClientRect();
+          if (ballRect.bottom >= brickRect.top && ballRect.top <= brickRect.bottom && ballRect.right >= brickRect.left && ballRect.left <= brickRect.right) {
+            brick.remove();
+            ballSpeedY = -ballSpeedY;
+            bricksDestroyed++;
+            if (bricksDestroyed === totalBricks) {
+              winMessage.style.display = "block";
+            }
+            if (document.querySelectorAll(".brick").length === 0) {
+              generateBricks(); // Generate new bricks if all bricks are destroyed
+            }
+          }
+        });
+      }
+
+      function updateGame() {
+        moveBall();
+        requestAnimationFrame(updateGame);
+      }
+
+      createBricks();
+      updateGame();
+
+      document.addEventListener("mousemove", movePaddle);
+    });
+  </script>
+</body>
+</html>
+
