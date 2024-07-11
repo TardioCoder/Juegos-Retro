@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="Assets/Favicon.png" type="image/x-icon">
+    <title>Pong</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: beige
+        }
+
+        canvas {
+            border: 4px solid black;
+            display: block;
+            margin: 70px auto;
+        }
+
+        #controls {
+            position: fixed;
+            font-size: 20px;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: transparent;
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="pongCanvas" width="1200" height="660"></canvas>
+    <div id="controls" style="display: none;">
+        <h2>Controles</h2>
+        <p>Jugador 1: W (up), S (down)</p>
+        <p>Jugador 2: Flecha hacia arriba (up), Flecha hacia abajo (down)</p>
+    </div>
+    <script>
+        const canvas = document.getElementById('pongCanvas');
+        const context = canvas.getContext('2d');
+        let gameStarted = false;
+        let speedIncrease = 0.009; // Aumento de velocidad en cada rebote
+
+        // Ball object
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 10,
+            dx: 2,
+            dy: -2,
+        };
+
+        // Player objects
+        const player1 = {
+            x: 10,
+            y: canvas.height / 2 - 50,
+            width: 10,
+            height: 100,
+            dy: 0,
+            score: 0
+        };
+
+        const player2 = {
+            x: canvas.width - 20,
+            y: canvas.height / 2 - 50,
+            width: 10,
+            height: 100,
+            dy: 0,
+            score: 0
+        };
+
+        // Draw players
+        function drawPlayers() {
+            context.fillStyle = 'black';
+            context.fillRect(player1.x, player1.y, player1.width, player1.height);
+            context.fillRect(player2.x, player2.y, player2.width, player2.height);
+        }
+
+        // Update player positions
+        function updatePlayerPosition() {
+            player1.y += player1.dy;
+            player2.y += player2.dy;
+
+            if (player1.y < 0) {
+                player1.y = 0;
+            } else if (player1.y + player1.height > canvas.height) {
+                player1.y = canvas.height - player1.height;
+            }
+
+            if (player2.y < 0) {
+                player2.y = 0;
+            } else if (player2.y + player2.height > canvas.height) {
+                player2.y = canvas.height - player2.height;
+            }
+        }
+
+        // Draw the ball
+        function drawBall() {
+            context.beginPath();
+            context.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            context.fillStyle = 'black';
+            context.fill();
+            context.closePath();
+        }
+
+        // Update ball position
+        function updateBallPosition() {
+            if (!gameStarted) return;
+
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Incremento de velocidad en cada rebote
+            ball.dx += ball.dx > 0 ? speedIncrease : -speedIncrease;
+            ball.dy += ball.dy > 0 ? speedIncrease : -speedIncrease;
+
+            // Collisions with walls
+            if (ball.y + ball.dy < ball.radius || ball.y + ball.dy > canvas.height - ball.radius) {
+                ball.dy = -ball.dy;
+            }
+
+            // Collisions with players
+            if (ball.x - ball.radius < player1.x + player1.width && ball.y > player1.y && ball.y < player1.y + player1.height) {
+                ball.dx = -ball.dx;
+            }
+
+            if (ball.x + ball.radius > player2.x && ball.y > player2.y && ball.y < player2.y + player2.height) {
+                ball.dx = -ball.dx;
+            }
+
+            // Score
+            if (ball.x - ball.radius < 0) {
+                player2.score++;
+                resetBall();
+            } else if (ball.x + ball.radius > canvas.width) {
+                player1.score++;
+                resetBall();
+            }
+        }
+
+        // Reset ball position
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx = Math.random() < 0.5 ? -2 : 2; // Velocidad aleatoria en dirección X
+            ball.dy = Math.random() < 0.5 ? -2 : 2; // Velocidad aleatoria en dirección Y
+        }
+
+        // Draw scores
+        function drawScores() {
+            context.font = '30px Arial';
+            context.fillText(player1.score, canvas.width / 4, 50);
+            context.fillText(player2.score, 3 * canvas.width / 4, 50);
+        }
+
+        // Show controls
+        const controls = document.getElementById('controls');
+        controls.style.display = 'block';
+
+        // Start game when a player moves
+        document.addEventListener('keydown', function (event) {
+            if (!gameStarted && (event.key === 'w' || event.key === 's' || event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+                gameStarted = true;
+                controls.style.display = 'none';
+            }
+
+            if (event.key === 'w') {
+                player1.dy = -3;
+            } else if (event.key === 's') {
+                player1.dy = 3;
+            } else if (event.key === 'ArrowUp') {
+                player2.dy = -3;
+            } else if (event.key === 'ArrowDown') {
+                player2.dy = 3;
+            }
+        });
+
+        document.addEventListener('keyup', function (event) {
+            if (event.key === 'w' || event.key === 's') {
+                player1.dy = 0;
+            } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                player2.dy = 0;
+            }
+        });
+
+        // Clear the canvas
+        function clearCanvas() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Game loop
+        function gameLoop() {
+            clearCanvas();
+            drawBall();
+            drawPlayers();
+            drawScores();
+            updateBallPosition();
+            updatePlayerPosition();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+
+</html>

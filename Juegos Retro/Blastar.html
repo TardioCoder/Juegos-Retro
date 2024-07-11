@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="Assets/Favicon.png" type="image/x-icon">
+    <title>Blastar</title>
+    <style>
+        canvas {
+            border: 2px solid black;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 40px;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 40px);
+            border: 2px solid black;
+        }
+
+        #score {
+            z-index: 1;
+            position: absolute;
+            top: 0;
+            left: 10px;
+            font-size: 20px;
+            margin-top: 10px;
+            color: white;
+            background-color: transparent;
+            padding: 5px 10px;
+            border: 2px white solid;
+            border-radius: 5px;
+        }
+
+        #restartButton {
+            z-index: 1;
+            position: absolute;
+            top: 0;
+            right: 10px;
+            font-size: 20px;
+            color: white;
+            background-color: transparent;
+            margin-top: 10px;
+            padding: 5px 10px;
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #gameOver {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: black;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        #levelCompleted {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: black;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="score">Score: <span id="scoreValue">0</span></div>
+    <button id="restartButton" onclick="restartGame()">Restart</button>
+    <canvas id="gameCanvas" width="1000" height="550"></canvas>
+    <div id="gameOver">
+        <h1>Game Over</h1>
+    </div>
+    <div id="levelCompleted">
+        <h1>Nivel Completado</h1>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const playerImg = new Image();
+        playerImg.src = 'Assets/MicrosoftTeams-image.png';
+
+        const enemyImg = new Image();
+        enemyImg.src = 'Assets/MicrosoftTeams-image (1).png';
+
+        let playerX = 400;
+        let playerY = 500;
+        let bullets = [];
+        let enemies = [];
+        let score = 0;
+        let gameOver = false;
+
+        function drawPlayer() {
+            ctx.drawImage(playerImg, playerX, playerY, 60, 60);
+        }
+
+        function drawBullets() {
+            ctx.fillStyle = 'red';
+            bullets.forEach(bullet => {
+                ctx.fillRect(bullet.x, bullet.y, 5, 10);
+            });
+        }
+
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                ctx.drawImage(enemyImg, enemy.x, enemy.y, 60, 60);
+            });
+        }
+
+        function updateBullets() {
+            bullets = bullets.filter(bullet => bullet.y > 0);
+            bullets.forEach(bullet => {
+                bullet.y -= 5;
+                checkBulletCollision(bullet);
+            });
+        }
+
+        function updateEnemies() {
+            enemies.forEach(enemy => {
+                enemy.y += 2;
+            });
+            if (Math.random() < 0.02) {
+                enemies.push({ x: Math.random() * (canvas.width - 60), y: 0 });
+            }
+        }
+
+        function checkBulletCollision(bullet) {
+            enemies.forEach((enemy, index) => {
+                if (
+                    bullet.x >= enemy.x &&
+                    bullet.x <= enemy.x + 60 &&
+                    bullet.y >= enemy.y &&
+                    bullet.y <= enemy.y + 60
+                ) {
+                    bullets.splice(bullets.indexOf(bullet), 1);
+                    enemies.splice(index, 1);
+                    score++;
+                    const scoreValue = document.getElementById('scoreValue');
+                    scoreValue.innerText = score;
+                    checkLevelCompleted(); 
+                }
+            });
+        }
+
+        function checkPlayerCollision() {
+            enemies.forEach(enemy => {
+                if (
+                    playerX + 60 >= enemy.x &&
+                    playerX <= enemy.x + 60 &&
+                    playerY + 60 >= enemy.y &&
+                    playerY <= enemy.y + 60
+                ) {
+                    gameOver = true;
+                }
+            });
+        }
+
+        function shootBullet() {
+            bullets.push({ x: playerX + 28, y: playerY });
+        }
+
+        function checkLevelCompleted() {
+            if (score === 40) {
+                document.getElementById('levelCompleted').style.display = 'block';
+                gameOver = true;
+            }
+        }
+
+        function restartGame() {
+            location.reload();
+        }
+
+        function gameLoop() {
+            if (!gameOver) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawPlayer();
+                drawBullets();
+                drawEnemies();
+                updateBullets();
+                updateEnemies();
+                checkPlayerCollision();
+                requestAnimationFrame(gameLoop);
+            } else {
+                document.getElementById('gameOver').style.display = 'block';
+            }
+        }
+
+        canvas.addEventListener('mousemove', event => {
+            if (!gameOver) {
+                playerX = event.clientX - canvas.offsetLeft - 30;
+            }
+        });
+
+        window.addEventListener('click', event => {
+            if (!gameOver) {
+                shootBullet();
+            }
+        });
+
+        gameLoop();
+    </script>
+</body>
+
+</html>
